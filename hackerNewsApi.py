@@ -29,3 +29,21 @@ def get_story_with_comments(id: str, **kwargs):
     story_details["comments"] = comments
 
     return story_details
+
+
+def get_story_all_comments(id: str):
+    story_details = get_item_details(id)
+
+    if "kids" not in story_details:
+        return []
+
+    comment_ids = story_details["kids"]
+    comments = []
+
+    for comment_id in comment_ids:
+        comment = get_item_details(comment_id)
+        if "kids" in comment:
+            comments.extend(get_story_all_comments(comment_id))
+        comments.append(comment)
+
+    return comments
