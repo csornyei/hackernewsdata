@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 import hackerNewsApi
 import utils
@@ -12,9 +12,14 @@ async def root():
 
 
 @app.get("/top-stories")
-async def top_stories():
+async def top_stories(req: Request):
+    story_count = req.query_params.get("story-count")
+    if story_count is None:
+        story_count = 10
+    else:
+        story_count = int(story_count)
     top_stories = hackerNewsApi.get_top_stories()
-    first_hundred_stories = top_stories[:100]
+    first_hundred_stories = top_stories[:story_count]
     stories = []
     for story_id in first_hundred_stories:
         story = hackerNewsApi.get_story_with_comments(
@@ -24,9 +29,14 @@ async def top_stories():
 
 
 @app.get("/most-used-words")
-async def most_used_words():
+async def most_used_words(req: Request):
+    story_count = req.query_params.get("story-count")
+    if story_count is None:
+        story_count = 30
+    else:
+        story_count = int(story_count)
     top_stories = hackerNewsApi.get_top_stories()
-    first_thirty_stories = top_stories[:30]
+    first_thirty_stories = top_stories[:story_count]
     comments = []
     for story_id in first_thirty_stories:
         story = hackerNewsApi.get_story_with_comments(
@@ -46,7 +56,17 @@ async def most_used_words():
     sorted_word_occurences = sorted(
         word_occurences.items(), key=lambda x: x[1], reverse=True)
 
-    return {"most_used_words": sorted_word_occurences[:10]}
+    word_count_param = req.query_params.get("word-count")
+
+    if word_count_param == "all":
+        return {"most_used_words": sorted_word_occurences}
+
+    if word_count_param is None:
+        word_count = 10
+    else:
+        word_count = int(word_count_param)
+
+    return {"most_used_words": sorted_word_occurences[:word_count]}
 
 
 @app.get("/most-used-words-all")
@@ -75,4 +95,13 @@ async def most_used_words_all(req: Request):
     sorted_word_occurences = sorted(
         word_occurences.items(), key=lambda x: x[1], reverse=True)
 
-    return {"most_used_words": sorted_word_occurences[:10]}
+    word_count_param = req.query_params.get("word-count")
+    if word_count_param == "all":
+        return {"most_used_words": sorted_word_occurences}
+
+    if word_count_param is None:
+        word_count = 10
+    else:
+        word_count = int(word_count_param)
+
+    return {"most_used_words": sorted_word_occurences[:word_count]}
