@@ -15,7 +15,7 @@ async def root():
 async def top_stories(req: Request):
     story_count = req.query_params.get("story-count")
     if story_count is None:
-        story_count = 10
+        story_count = 100
     else:
         story_count = int(story_count)
     top_stories = hackerNewsApi.get_top_stories()
