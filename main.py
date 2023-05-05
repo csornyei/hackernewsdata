@@ -20,11 +20,8 @@ async def top_stories(req: Request):
         story_count = int(story_count)
     top_stories = hackerNewsApi.get_top_stories()
     first_hundred_stories = top_stories[:story_count]
-    stories = []
-    for story_id in first_hundred_stories:
-        story = hackerNewsApi.get_story_with_comments(
-            story_id, comment_limit=50)
-        stories.append(story)
+    stories = hackerNewsApi.get_stories_with_comments_parallel(
+        first_hundred_stories, comment_limit=50)
     return {"top_stories": stories}
 
 
@@ -37,21 +34,21 @@ async def most_used_words(req: Request):
         story_count = int(story_count)
     top_stories = hackerNewsApi.get_top_stories()
     first_thirty_stories = top_stories[:story_count]
+    stories = hackerNewsApi.get_stories_with_comments_parallel(
+        first_thirty_stories, comment_limit=100)
+
     comments = []
-    for story_id in first_thirty_stories:
-        story = hackerNewsApi.get_story_with_comments(
-            story_id, comment_limit=100)
+    for story in stories:
+        if "comments" not in story:
+            continue
         comments.extend(story["comments"])
 
-    word_occurences = {}
-    for comment in comments:
-        comment_text = comment["text"]
-        if comment_text is None:
-            continue
-        cleaned_text = utils.clean_text(comment_text)
-        comment_word_occurences = utils.get_word_occurences(cleaned_text)
-        word_occurences = utils.combine_word_occurences(
-            word_occurences, comment_word_occurences)
+    comments = list(
+        filter(lambda comment: comment is not None and "text" in comment, comments))
+
+    comments_text = [utils.clean_text(comment["text"]) for comment in comments]
+
+    word_occurences = utils.get_word_occurences_parallel(comments_text)
 
     sorted_word_occurences = sorted(
         word_occurences.items(), key=lambda x: x[1], reverse=True)
@@ -78,19 +75,20 @@ async def most_used_words_all(req: Request):
         story_count = int(story_count)
     top_stories = hackerNewsApi.get_top_stories()
     first_ten_stories = top_stories[:story_count]
-    comments = []
-    for story_id in first_ten_stories:
-        comments = hackerNewsApi.get_story_all_comments(story_id)
+    story_comments = hackerNewsApi.get_stories_with_all_comments_parallel(
+        first_ten_stories)
 
-    word_occurences = {}
-    for comment in comments:
-        if "text" not in comment:
-            continue
-        comment_text = comment["text"]
-        cleaned_text = utils.clean_text(comment_text)
-        comment_word_occurences = utils.get_word_occurences(cleaned_text)
-        word_occurences = utils.combine_word_occurences(
-            word_occurences, comment_word_occurences)
+    comments = []
+    for story_comment in story_comments:
+        comments.extend(story_comment)
+
+    comments = list(
+        filter(lambda comment: comment is not None and "text" in comment, comments))
+    print(len(comments))
+
+    comments_text = [utils.clean_text(comment["text"]) for comment in comments]
+
+    word_occurences = utils.get_word_occurences_parallel(comments_text)
 
     sorted_word_occurences = sorted(
         word_occurences.items(), key=lambda x: x[1], reverse=True)

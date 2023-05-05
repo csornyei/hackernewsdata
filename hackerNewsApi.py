@@ -1,4 +1,5 @@
 import requests
+from concurrent.futures import ThreadPoolExecutor
 
 
 def get_top_stories():
@@ -47,3 +48,17 @@ def get_story_all_comments(id: str):
         comments.append(comment)
 
     return comments
+
+
+def get_stories_with_comments_parallel(story_ids: list, **kwargs):
+    with ThreadPoolExecutor() as executor:
+        stories = executor.map(
+            lambda story_id: get_story_with_comments(story_id, **kwargs), story_ids)
+    return list(stories)
+
+
+def get_stories_with_all_comments_parallel(story_ids: list):
+    with ThreadPoolExecutor() as executor:
+        comments = executor.map(
+            lambda story_id: get_story_all_comments(story_id), story_ids)
+    return list(comments)
